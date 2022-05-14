@@ -6,20 +6,23 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/joho/godotenv"
 	tusd "github.com/tus/tusd/pkg/handler"
 	"github.com/tus/tusd/pkg/s3store"
 )
 
 func main() {
+	godotenv.Load()
 	println("start main.go ...")
 
-	handler := getHandler("/testbucket")
+	handler := getHandler(os.Getenv("S3_BUCKET"))
 	http.Handle("/upload/", http.StripPrefix("/upload/", handler))
 
 	err := http.ListenAndServe(":4000", nil)
@@ -78,8 +81,8 @@ func getHandler(bucket string) *tusd.Handler {
 func getS3Composer(bucket string) *tusd.StoreComposer {
 	s3Config := &aws.Config{
 		Region:      aws.String("MINIO_REGION"),
-		Endpoint:    aws.String("http://192.168.1.191:9000"),
-		Credentials: credentials.NewStaticCredentials("minio", "minio123", ""),
+		Endpoint:    aws.String(os.Getenv("S3_URL")),
+		Credentials: credentials.NewStaticCredentials(os.Getenv("S3_USERNAME"), os.Getenv("S3_PASSWORD"), ""),
 		DisableSSL:  aws.Bool(true),
 	}
 	store := s3store.New(bucket, s3.New(session.Must(session.NewSession()), s3Config))
